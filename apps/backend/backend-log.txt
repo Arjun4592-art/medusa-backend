@@ -1,0 +1,265 @@
+npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm.
+
+> @dtc/backend@0.0.1 dev
+> medusa develop
+
+[32minfo[39m:    redisUrl not found. A fake redis instance will be used.
+NOT SUPPORTED: option missingRefs. Pass empty schema with $id that should be ignored to ajv.addSchema.
+[33mwarn[39m:    Linting skipped: the `eslint` package is not installed in this project. Install the `eslint` package with your package manager to enable linting, or pass `--lint false` to silence this message.
+[32minfo[39m:    [Watcher] Using standard dev server (restart on file change)
+[32minfo[39m:    [Watcher] modified backend-log.txt modified: restarting dev server
+[32minfo[39m:    [Watcher] Reloaded in 1047.98ms
+[32minfo[39m:    [Watcher] Watching filesystem to reload dev server on file change
+[32minfo[39m:    redisUrl not found. A fake redis instance will be used.
+- Creating server
+[32minfo[39m:    redisUrl not found. A fake redis instance will be used.
+[32minfo[39m:    Skipping instrumentation registration. No register function found.
+[32minfo[39m:    redisUrl not found. A fake redis instance will be used.
+[32minfo[39m:    No link to load from C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\node_modules\@medusajs\draft-order\.medusa\server\src\links. skipped.
+[33mwarn[39m:    Local Event Bus installed. This is not recommended for production.
+[32minfo[39m:    Locking module: Using "in-memory" as default.
+[32minfo[39m:    No workflow to load from C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\node_modules\@medusajs\draft-order\.medusa\server\src\workflows. skipped.
+[32minfo[39m:    No subscriber to load from C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\node_modules\@medusajs\draft-order\.medusa\server\src\subscribers. skipped.
+[32minfo[39m:    No job to load from C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\node_modules\@medusajs\medusa\dist\jobs. skipped.
+[32minfo[39m:    No job to load from C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\node_modules\@medusajs\loyalty-plugin\.medusa\server\src\jobs. skipped.
+[32minfo[39m:    No job to load from C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\node_modules\@medusajs\draft-order\.medusa\server\src\jobs. skipped.
+√ Server is ready on port: 9000 – 89892ms
+[32minfo[39m:    Admin URL → http://localhost:9000/app
+[32mhttp[39m:    GET /admin/returns?order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Aitems%2C%2Aitems.reason ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 11.969 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/changes?change_type%5B0%5D=edit&change_type%5B1%5D=claim&change_type%5B2%5D=exchange&change_type%5B3%5D=return&change_type%5B4%5D=transfer&change_type%5B5%5D=update_order ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.544 ms
+[32mhttp[39m:    GET /admin/returns?order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Breceived_at%2C%2Aitems ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 1.532 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K?fields=%2B%2Agift_cards ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 3.364 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K?fields=currency_code%2C%2Aitems%2C%2Aitems.variant%2C%2Bitems.variant.product.shipping_profile.id%2C%2Ashipping_address%2C%2Bshipping_methods.shipping_option_id%2Cno_notification ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 1.783 ms
+[32mhttp[39m:    GET /admin/stock-locations?limit=10&offset=0 ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 4.065 ms
+[32mhttp[39m:    GET /admin/shipping-options?stock_location_id=sloc_01KXK6FVA02NN3H0B9KPB1PFRD&fields=%2Bservice_zone.fulfillment_set.location.id ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 4.307 ms
+[32mhttp[39m:    GET /admin/products/prod_01KXKJRC9Q76P4JRH4R8ERMPS2/variants/variant_01KXKJRCDF044RADZ43Q39N614?fields=%2Ainventory%2C%2Ainventory.location_levels%2C%2Ainventory_items ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.174 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 438.806 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 528.466 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 18.442 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 178.663 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 266.777 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 5.794 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 142.225 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 325.249 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.884 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 178.145 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 193.016 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.322 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 189.087 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 348.789 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 13.311 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 187.713 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 287.721 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 12.188 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 201.373 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 289.066 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.587 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 148.729 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 329.432 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.883 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 288.637 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 387.263 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 13.000 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 232.589 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 265.990 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 13.952 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 260.959 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 474.919 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 17.780 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 375.146 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 491.272 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.768 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 222.185 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 374.636 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 19.838 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 161.169 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 407.082 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 14.473 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 199.256 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 323.156 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.846 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 177.339 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 396.857 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.083 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 174.847 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 362.079 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.145 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 138.071 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 225.538 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 14.907 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 210.608 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 256.117 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.394 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 97.105 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 245.985 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 7.900 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 174.777 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 233.752 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.606 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 140.612 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 274.400 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.290 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 184.053 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 288.163 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 16.463 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 190.276 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 246.975 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 13.015 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 120.082 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 289.443 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 12.414 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 201.731 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 292.540 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 7.919 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 194.224 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 261.029 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 17.380 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 121.266 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 313.271 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 10.524 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 209.525 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 271.448 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.413 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 129.556 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 258.139 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 10.674 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 218.452 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 352.401 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 13.475 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 205.045 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 302.829 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 10.797 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 148.376 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 176.997 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 8.610 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 161.339 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 231.601 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.335 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 239.346 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 308.058 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.003 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 107.803 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 278.144 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 15.540 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 234.172 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 256.806 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.423 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 191.359 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 310.351 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 24.592 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 245.378 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 404.267 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 17.902 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 203.292 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 254.950 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.067 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 468.751 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 436.700 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 17.351 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 149.307 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 368.603 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 18.186 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 225.661 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 271.091 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.141 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 270.003 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 316.092 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.921 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 345.822 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 177.014 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 12.133 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 89.911 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 153.324 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 7.674 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 208.105 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 242.511 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.077 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 314.389 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 383.347 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.076 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 104.813 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 248.132 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.993 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 204.854 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 335.043 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 13.476 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 161.732 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 227.554 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 12.077 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 203.655 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 161.853 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 7.742 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 160.947 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 267.225 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 9.980 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 168.334 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 267.433 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 14.570 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 200.186 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 324.633 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 10.397 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 170.386 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 208.081 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.924 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 187.708 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 280.673 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 11.260 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 139.595 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 283.221 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 10.271 ms
+[32mhttp[39m:    GET /admin/orders?limit=10&order=-created_at ← - (200) - 183.784 ms
+[32mhttp[39m:    GET /admin/products?limit=100&fields=*variants,*variants.inventory_items ← - (200) - 200.927 ms
+[32mhttp[39m:    GET /admin/customers?limit=5&order=-created_at ← - (200) - 12.439 ms
+[32mhttp[39m:    GET /admin/feature-flags ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (304) - 7.642 ms
+[32mhttp[39m:    GET /admin/users/me ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 3.383 ms
+[32mhttp[39m:    GET /admin/layouts/configurations?limit=1&fields=id ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 1.674 ms
+[32mhttp[39m:    GET /admin/layouts/topbar/configuration ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 9.282 ms
+[32mhttp[39m:    GET /admin/stores ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 9.747 ms
+[32mhttp[39m:    GET /admin/notifications?limit=1&offset=0&fields=created_at ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 10.079 ms
+[32mhttp[39m:    GET /admin/orders?q=&limit=3&fields=id%2Cdisplay_id%2Cemail ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 10.008 ms
+[32mhttp[39m:    GET /admin/products?q=&limit=3&fields=id%2Ctitle%2Cthumbnail%2C-type%2C-collection%2C-options%2C-tags%2C-images%2C-variants%2C-sales_channels ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 9.967 ms
+[32mhttp[39m:    GET /admin/product-variants?q=&limit=3&fields=id%2Ctitle%2Csku%2Cproduct_id ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 5.649 ms
+[32mhttp[39m:    GET /admin/product-categories?limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.716 ms
+[32mhttp[39m:    GET /admin/collections?q=&limit=3&fields=id%2Ctitle ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 7.933 ms
+[32mhttp[39m:    GET /admin/customers?q=&limit=3&fields=id%2Cemail%2Cfirst_name%2Clast_name ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 9.696 ms
+[32mhttp[39m:    GET /admin/customer-groups?q=&limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 10.900 ms
+[32mhttp[39m:    GET /admin/inventory-items?q=&limit=3&fields=id%2Ctitle%2Csku ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 11.346 ms
+[32mhttp[39m:    GET /admin/promotions?q=&limit=3&fields=id%2Ccode%2Cstatus ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 13.152 ms
+[32mhttp[39m:    GET /admin/price-lists?q=&limit=3&fields=id%2Ctitle ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 14.431 ms
+[32mhttp[39m:    GET /admin/campaigns?q=&limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 14.373 ms
+[32mhttp[39m:    GET /admin/users?q=&limit=3&fields=id%2Cemail%2Cfirst_name%2Clast_name ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 12.008 ms
+[32mhttp[39m:    GET /admin/regions?q=&limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 3.061 ms
+[32mhttp[39m:    GET /admin/tax-regions?q=&limit=3&fields=id%2Ccountry_code%2Cprovince_code ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 5.015 ms
+[32mhttp[39m:    GET /admin/return-reasons?q=&limit=3&fields=id%2Clabel%2Cvalue ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.136 ms
+[32mhttp[39m:    GET /admin/sales-channels?q=&limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.929 ms
+[32mhttp[39m:    GET /admin/product-types?q=&limit=3&fields=id%2Cvalue ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 8.468 ms
+[32mhttp[39m:    GET /admin/product-tags?q=&limit=3&fields=id%2Cvalue ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.033 ms
+[32mhttp[39m:    GET /admin/stock-locations?q=&limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.595 ms
+[32mhttp[39m:    GET /admin/shipping-profiles?q=&limit=3&fields=id%2Cname ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 7.575 ms
+[32mhttp[39m:    GET /admin/api-keys?q=&limit=3&fields=id%2Ctitle%2Credacted&type=publishable ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 7.750 ms
+[32mhttp[39m:    GET /admin/api-keys?q=&limit=3&fields=id%2Ctitle%2Credacted&type=secret ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 8.466 ms
+[32mhttp[39m:    GET /admin/layouts/sidebar/configuration ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 5.312 ms
+[32mhttp[39m:    GET /admin/plugins ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.096 ms
+[32mhttp[39m:    GET /admin/layouts/order.details/configuration ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.789 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K?fields=id%2Cstatus%2Ccreated_at%2Ccanceled_at%2Cemail%2Cdisplay_id%2Ccustom_display_id%2Ccurrency_code%2Cmetadata%2Ctotal%2Ccredit_line_total%2Citem_subtotal%2Citem_total%2Citem_tax_total%2Coriginal_item_tax_total%2Citem_discount_total%2Cshipping_subtotal%2Coriginal_total%2Coriginal_tax_total%2Csubtotal%2Cdiscount_total%2Cdiscount_subtotal%2Cshipping_total%2Cshipping_tax_total%2Coriginal_shipping_tax_total%2Cshipping_discount_total%2Ctax_total%2Crefundable_total%2Corder_change%2C%2Acustomer%2C%2Aitems%2C%2Aitems.variant%2C%2Aitems.variant.product%2C%2Aitems.variant.options%2C%2Bitems.variant.manage_inventory%2C%2Aitems.variant.inventory_items.inventory%2C%2Bitems.variant.inventory_items.required_quantity%2C%2Bsummary%2C%2Ashipping_address%2C%2Abilling_address%2C%2Asales_channel%2C%2Apromotions%2C%2Ashipping_methods%2C%2Acredit_lines%2C%2Afulfillments%2C%2Bfulfillments.shipping_option.service_zone.fulfillment_set.type%2C%2Afulfillments.items%2C%2Afulfillments.labels%2C%2Afulfillments.labels%2C%2Apayment_collections%2C%2Apayment_collections.payment_sessions%2C%2Apayment_collections.payments%2C%2Apayment_collections.payments.refunds%2C%2Apayment_collections.payments.refunds.refund_reason%2Cregion.automatic_taxes ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 8.242 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/preview ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 9.698 ms
+[32mhttp[39m:    GET /admin/reservations?line_item_id%5B0%5D=ordli_01KY27GRC0TQ9JP2J79EBNBTPM&limit=1 ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 4.661 ms
+[32mhttp[39m:    GET /admin/returns?status=requested&order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Breceived_at ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 5.768 ms
+[32mhttp[39m:    GET /admin/claims?order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Aadditional_items ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 6.665 ms
+[32mhttp[39m:    GET /admin/exchanges?order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Aadditional_items ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 8.449 ms
+[32mhttp[39m:    GET /admin/returns?order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Aitems%2C%2Aitems.reason ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 10.537 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/changes?change_type%5B0%5D=edit&change_type%5B1%5D=claim&change_type%5B2%5D=exchange&change_type%5B3%5D=return&change_type%5B4%5D=transfer&change_type%5B5%5D=update_order ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 5.400 ms
+[32mhttp[39m:    GET /admin/returns?order_id=order_01KY27GRBZ1ZZP8VB2DYBQR90K&fields=%2Breceived_at%2C%2Aitems ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 5.359 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K?fields=%2B%2Agift_cards ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 8.041 ms
+[32mhttp[39m:    GET /admin/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K?fields=currency_code%2C%2Aitems%2C%2Aitems.variant%2C%2Bitems.variant.product.shipping_profile.id%2C%2Ashipping_address%2C%2Bshipping_methods.shipping_option_id%2Cno_notification ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 8.898 ms
+[32mhttp[39m:    GET /admin/stock-locations?limit=10&offset=0 ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 10.017 ms
+[32mhttp[39m:    GET /admin/products/prod_01KXKJRC9Q76P4JRH4R8ERMPS2/variants/variant_01KXKJRCDF044RADZ43Q39N614?fields=%2Ainventory%2C%2Ainventory.location_levels%2C%2Ainventory_items ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 2.185 ms
+[32mhttp[39m:    GET /admin/shipping-options?stock_location_id=sloc_01KXK6FVA02NN3H0B9KPB1PFRD&fields=%2Bservice_zone.fulfillment_set.location.id ← http://localhost:9000/app/orders/order_01KY27GRBZ1ZZP8VB2DYBQR90K/fulfillment?requires_shipping=true (401) - 2.598 ms
+[32mhttp[39m:    GET /cloud/auth ← http://localhost:9000/app/login (304) - 19.268 ms
+npm error Lifecycle script `dev` failed with error:
+npm error code 3221225786
+npm error path C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\apps\backend
+npm error workspace @dtc/backend@0.0.1
+npm error location C:\Users\Arjun\OneDrive\Desktop\New\smash-backend\apps\backend
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c medusa develop

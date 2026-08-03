@@ -1,0 +1,21 @@
+
+> dev
+> turbo dev
+
+
+   • Packages in scope: @dtc/backend
+   • Running dev in 1 packages
+   • Remote caching disabled
+
+@dtc/backend:dev: cache bypass, force executing b13259e4d5f38d8c
+@dtc/backend:dev: npm warn Unknown project config "auto-install-peers". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+@dtc/backend:dev: 
+@dtc/backend:dev: > @dtc/backend@0.0.1 dev
+@dtc/backend:dev: > medusa develop
+@dtc/backend:dev: 
+Shutting down Turborepo tasks...
+
+ Tasks:    0 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    11.462s 
+
