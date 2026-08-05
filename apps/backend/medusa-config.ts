@@ -3,12 +3,11 @@ import {
   defineConfig,
   ContainerRegistrationKeys,
 } from '@medusajs/framework/utils'
-
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
-
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    redisUrl: process.env.REDIS_URL,
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
@@ -19,14 +18,13 @@ module.exports = defineConfig({
   },
   admin: {
     disable: false,
-    backendUrl: 'http://localhost:9000',
+    backendUrl: process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000',
     vite: () => ({
       css: {
         preprocessorOptions: {},
       },
     }),
   },
-
   modules: [
     // BUG FIX: this whole `auth` module block was missing entirely.
     // Medusa doesn't silently fall back to a default provider list once you
