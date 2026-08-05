@@ -3,14 +3,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "env": ["*"]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["*"]
     },
     "start": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": ["*"]
     },
     "lint": {
       "outputs": []
@@ -19,7 +23,8 @@
       "outputs": []
     },
     "seed": {
-      "outputs": []
+      "outputs": [],
+      "env": ["*"]
     }
   }
 }
