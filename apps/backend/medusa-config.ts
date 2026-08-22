@@ -29,17 +29,6 @@ module.exports = defineConfig({
     }),
   },
   modules: [
-    // BUG FIX: this whole `auth` module block was missing entirely.
-    // Medusa doesn't silently fall back to a default provider list once you
-    // have a custom `modules` array — without this, only whatever Medusa
-    // ships as its own internal default was active, which does NOT include
-    // Google. That's why the storefront's Google login could never actually
-    // create/find a Medusa customer: `medusaStore.auth.login('customer',
-    // 'google', ...)` had no 'google' provider to call.
-    //
-    // NOTE: keep `emailpass` listed here too — the storefront's own
-    // email/password login (Credentials provider in NextAuth) depends on
-    // this provider still being registered.
     {
       resolve: '@medusajs/medusa/auth',
       dependencies: [ContainerRegistrationKeys.LOGGER],
@@ -99,6 +88,9 @@ module.exports = defineConfig({
           },
         ],
       },
+    },
+    {
+      resolve: './src/modules/blog',
     },
   ],
   plugins: [
