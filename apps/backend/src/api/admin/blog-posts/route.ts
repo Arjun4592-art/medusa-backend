@@ -31,6 +31,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     excerpt: body.excerpt ?? null,
     content: body.content,
     cover_image: body.cover_image ?? null,
+    author: body.author ?? null,
+    seo_title: body.seo_title ?? null,
+    seo_description: body.seo_description ?? null,
+    seo_keywords: body.seo_keywords ?? null,
     status: body.status ?? 'draft',
     published_at:
       body.status === 'published' ? (body.published_at ?? new Date()) : null,
