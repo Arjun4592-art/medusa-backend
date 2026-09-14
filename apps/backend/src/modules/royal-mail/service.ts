@@ -196,6 +196,14 @@ class RoyalMailFulfillmentProviderService extends AbstractFulfillmentProviderSer
       orderAny?.shipping_methods?.[0]?.total ??
       orderAny?.shipping_methods?.[0]?.amount
     const total: number | undefined = orderAny?.total
+    // VAT/tax — Royal Mail has a dedicated orderTax field and does NOT
+    // infer it from total - subtotal - shippingCostCharged, so without
+    // this Click & Drop always showed "Order tax: £0.00" even on orders
+    // that clearly had VAT included in `total`. Default to 0 (not
+    // "missing") when absent, since a genuinely tax-free order is valid
+    // and shouldn't block label creation the way a missing subtotal/total
+    // should.
+    const orderTax: number = orderAny?.tax_total ?? orderAny?.taxTotal ?? 0
 
     const missing: string[] = []
     if (!currencyCode) missing.push('currency_code')
@@ -253,6 +261,7 @@ class RoyalMailFulfillmentProviderService extends AbstractFulfillmentProviderSer
       orderDate: new Date().toISOString(),
       subtotal: subtotal as number,
       shippingCostCharged: shippingCostCharged as number,
+      orderTax,
       total: total as number,
       currencyCode: (currencyCode as string).toUpperCase(),
     })

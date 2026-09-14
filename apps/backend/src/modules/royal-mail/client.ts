@@ -198,9 +198,15 @@ export type RoyalMailCreateOrderPayload = {
   // --- Order-value fields — required by Royal Mail (errorCode 84) for
   // customs/insurance valuation. All monetary amounts are in the same
   // currency, given by currencyCode. ---
-  subtotal: number // value of goods, ex. shipping
+  subtotal: number // value of goods, ex. shipping, ex. tax
   shippingCostCharged: number // what the customer paid for shipping
-  total: number // subtotal + shippingCostCharged (+ tax, if included)
+  // VAT/tax charged on the order. Royal Mail's API has its own dedicated
+  // orderTax field — it does NOT derive tax from total - subtotal -
+  // shippingCostCharged, so omitting this shows "Order tax: £0.00" in
+  // Click & Drop even when `total` already has VAT baked in. Optional
+  // only because some orders genuinely have zero tax (e.g. exports).
+  orderTax?: number
+  total: number // per Royal Mail docs: subtotal + orderTax + shippingCostCharged
   currencyCode: string // e.g. "GBP"
 }
 

@@ -17,10 +17,8 @@ module.exports = defineConfig({
     },
   },
   admin: {
-    disable: true,
-    backendUrl:
-      process.env.MEDUSA_BACKEND_URL ||
-      'https://medusa-backend-1-ggdq.onrender.com',
+    disable: false,
+    backendUrl: process.env.MEDUSA_BACKEND_URL || 'http://localhost:9000',
     vite: () => ({
       css: {
         preprocessorOptions: {},
