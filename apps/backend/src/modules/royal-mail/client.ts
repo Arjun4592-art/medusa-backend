@@ -1,19 +1,8 @@
-/**
- * Royal Mail Click & Drop API client.
- *
- * Docs: https://api.parcel.royalmail.com (Click & Drop Business API)
- * Auth: single Auth Key in the "Authorization" header (NOT OAuth/Bearer).
- *
- * Rate limits (per Royal Mail): ~2 requests/sec, max 2000 orders per
- * "create orders" call. We enforce a simple queue + backoff here so any
- * caller (this module, webhooks, admin actions) automatically respects it.
- */
-
 const BASE_URL = 'https://api.parcel.royalmail.com/api/v1'
 
 export type RoyalMailConfig = {
   apiKey: string
-  tradingName?: string // set once client confirms which trading name to use
+  tradingName?: string
 }
 
 type RequestOptions = {
@@ -23,9 +12,8 @@ type RequestOptions = {
   retries?: number
 }
 
-// --- very small in-process rate limiter: max ~2 req/sec ---
 let lastRequestAt = 0
-const MIN_INTERVAL_MS = 550 // slightly above 500ms to stay safely under 2/sec
+const MIN_INTERVAL_MS = 550
 
 async function throttle() {
   const now = Date.now()
@@ -41,12 +29,6 @@ export class RoyalMailClient {
   private tradingName?: string
 
   constructor(config: RoyalMailConfig) {
-    // Deliberately NOT throwing here even though apiKey is required for
-    // real use. This provider is registered in medusa-config.ts, which
-    // runs at server boot — throwing in the constructor would crash the
-    // entire Medusa backend (not just Royal Mail shipping) any time the
-    // key is unset. The check happens lazily in request() instead, so
-    // only an actual shipping/label action fails, not the whole server.
     this.apiKey = config.apiKey ?? ''
     this.tradingName = config.tradingName
   }
@@ -75,7 +57,6 @@ export class RoyalMailClient {
       body: body ? JSON.stringify(body) : undefined,
     })
 
-    // Backoff on 429 / 5xx
     if ((res.status === 429 || res.status >= 500) && retries > 0) {
       const backoffMs = (4 - retries) * 1000 + 500
       await new Promise((resolve) => setTimeout(resolve, backoffMs))
@@ -144,12 +125,25 @@ export class RoyalMailClient {
       path: `/tracking/${trackingNumber}`,
     })
   }
+
+  async getReturnServices() {
+    return this.request<RoyalMailGetReturnServicesResponse>({
+      method: 'GET',
+      path: '/returns/services',
+    })
+  }
+
+  async createReturn(payload: RoyalMailCreateReturnPayload) {
+    return this.request<RoyalMailCreateReturnResponse>({
+      method: 'POST',
+      path: '/returns',
+      body: payload,
+    })
+  }
 }
 
-// --- Types ---
-
 export type RoyalMailCreateOrderPayload = {
-  orderReference: string // Medusa fulfillment/order id — used for idempotency
+  orderReference: string
   recipient: {
     address: {
       fullName: string
@@ -165,24 +159,15 @@ export type RoyalMailCreateOrderPayload = {
   }
   packages: Array<{
     weightInGrams: number
-    // Required by Royal Mail's schema (confirmed via errorCode 84). This
-    // store only ever ships physical goods (rackets, shoes, equipment) —
-    // never letters/documents — so "parcel" is always correct here.
+
     packageFormatIdentifier: string
   }>
-  // Real service code per shipping option, e.g. "TPN48" / "TPN24" for
-  // Tracked 48 / Tracked 24 — confirm in Click & Drop dashboard > Manage
-  // Services before hardcoding a different value anywhere.
-  serviceCode: string
-  orderDate: string // ISO date
 
-  // Required by Royal Mail (errorCode 95/71/15) whenever no
-  // AddressBookReference is used. IMPORTANT: this must be nested as
-  // billing.address (mirroring recipient.address) — the error's field
-  // paths ("Billing.Address.City", "Billing.Address.AddressLine1") confirm
-  // Royal Mail does NOT accept a flat "billingAddress" key. This store
-  // doesn't collect a separate billing address at checkout, so this is
-  // populated from the same shipping address in service.ts.
+  serviceCode: string
+  orderDate: string
+
+  consequentialLoss?: number
+
   billing: {
     address: {
       fullName: string
@@ -195,19 +180,10 @@ export type RoyalMailCreateOrderPayload = {
     }
   }
 
-  // --- Order-value fields — required by Royal Mail (errorCode 84) for
-  // customs/insurance valuation. All monetary amounts are in the same
-  // currency, given by currencyCode. ---
-  subtotal: number // value of goods, ex. shipping, ex. tax
-  shippingCostCharged: number // what the customer paid for shipping
-  // VAT/tax charged on the order. Royal Mail's API has its own dedicated
-  // orderTax field — it does NOT derive tax from total - subtotal -
-  // shippingCostCharged, so omitting this shows "Order tax: £0.00" in
-  // Click & Drop even when `total` already has VAT baked in. Optional
-  // only because some orders genuinely have zero tax (e.g. exports).
-  orderTax?: number
-  total: number // per Royal Mail docs: subtotal + orderTax + shippingCostCharged
-  currencyCode: string // e.g. "GBP"
+  subtotal: number
+  shippingCostCharged: number
+  total: number
+  currencyCode: string
 }
 
 export type RoyalMailCreateOrderResponse = {
@@ -218,9 +194,7 @@ export type RoyalMailCreateOrderResponse = {
   }>
   failedOrders: Array<{
     orderReference: string
-    // Click & Drop returns structured error objects here, not plain
-    // strings — see service.ts's error handling for how these are
-    // unpacked into a readable message.
+
     errors: Array<{ code?: string; message?: string } | string>
   }>
 }
@@ -229,4 +203,50 @@ export type RoyalMailTrackingResponse = {
   trackingNumber: string
   status: string
   events: Array<{ eventCode: string; description: string; timestamp: string }>
+}
+
+export type RoyalMailReturnAddress = {
+  firstName: string
+  lastName: string
+  companyName?: string
+  addressLine1: string
+  addressLine2?: string
+  addressLine3?: string
+  city: string
+  county?: string
+  postcode: string
+  country: string
+
+  countryIsoCode: string
+}
+
+export type RoyalMailGetReturnServicesResponse = {
+  services: Array<{
+    carrierGuid: string
+    carrierServiceGuid: string
+    serviceName: string
+    serviceCode: string
+  }>
+}
+
+export type RoyalMailCreateReturnPayload = {
+  service: {
+    serviceCode: string
+    serviceRegisterCode?: string
+  }
+  shipment: {
+    shippingAddress: RoyalMailReturnAddress
+
+    returnAddress: RoyalMailReturnAddress
+    customerReference?: { reference: string }
+  }
+}
+
+export type RoyalMailCreateReturnResponse = {
+  shipment: {
+    trackingNumber: string
+    uniqueItemId: string
+  }
+  qrCode: string
+  label: string
 }
