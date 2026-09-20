@@ -1,18 +1,10 @@
 FROM node:20-slim
-
 WORKDIR /app
-
-COPY package.json package-lock.json ./
-COPY apps/backend/package.json ./apps/backend/
-
-RUN npm install
-
+COPY package.json ./
+RUN npm install --legacy-peer-deps
 COPY . .
-
-RUN cd apps/backend && npx medusa build
-
-WORKDIR /app/apps/backend
-
+RUN npx medusa build
+WORKDIR /app/.medusa/server
+RUN npm install --legacy-peer-deps --omit=dev
 EXPOSE 9000
-
 CMD ["npx", "medusa", "start"]
