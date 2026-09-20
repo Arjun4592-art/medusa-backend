@@ -1,6 +1,6 @@
 import { ModuleProvider, Modules } from '@medusajs/framework/utils'
-import RoyalMailFulfillmentProviderService from './service'
+import Parcel2GoFulfillmentProviderService from './service'
 
 export default ModuleProvider(Modules.FULFILLMENT, {
-  services: [RoyalMailFulfillmentProviderService],
+  services: [Parcel2GoFulfillmentProviderService],
 })

@@ -79,11 +79,13 @@ module.exports = defineConfig({
             id: 'manual',
           },
           {
-            resolve: './src/modules/royal-mail',
-            id: 'royal-mail',
+            resolve: './src/modules/parcel2go',
+            id: 'parcel2go',
             options: {
-              apiKey: process.env.ROYAL_MAIL_CLICK_DROP_API_KEY,
-              tradingName: process.env.ROYAL_MAIL_TRADING_NAME,
+              clientId: process.env.PARCEL2GO_CLIENT_ID,
+              clientSecret: process.env.PARCEL2GO_CLIENT_SECRET,
+              environment: process.env.PARCEL2GO_ENVIRONMENT || 'live',
+              senderName: process.env.PARCEL2GO_SENDER_COMPANY_NAME,
             },
           },
         ],
