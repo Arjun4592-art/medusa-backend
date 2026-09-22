@@ -5,8 +5,10 @@
  *
  * Place at: backend/scripts/get-parcel2go-quotes.ts
  * Run (from backend/):
- *   npx tsx scripts/get-parcel2go-quotes.ts [deliveryPostcode] [weightKg]
- *   e.g. npx tsx scripts/get-parcel2go-quotes.ts "EC1A 1BB" 1
+ *   npx tsx scripts/get-parcel2go-quotes.ts [deliveryPostcode] [weightKg] [Lcm] [Wcm] [Hcm]
+ *   e.g. npx tsx scripts/get-parcel2go-quotes.ts "EC1A 1BB" 1 35 25 2   (large letter)
+ *        npx tsx scripts/get-parcel2go-quotes.ts "EC1A 1BB" 2 45 35 16  (small parcel)
+ *        npx tsx scripts/get-parcel2go-quotes.ts "EC1A 1BB" 2 80 35 15  (racket)
  *
  * Needs in backend/.env: PARCEL2GO_CLIENT_ID, PARCEL2GO_CLIENT_SECRET,
  * PARCEL2GO_ENVIRONMENT (use "sandbox" with sandbox credentials),
@@ -36,6 +38,9 @@ const postcode = process.env.PARCEL2GO_SENDER_ADDRESS_POSTCODE
 
 const deliveryPostcode = process.argv[2] || 'EC1A 1BB'
 const weightKg = Number(process.argv[3] || 1)
+const lengthCm = Number(process.argv[4] || 80)
+const widthCm = Number(process.argv[5] || 35)
+const heightCm = Number(process.argv[6] || 15)
 
 async function main() {
   const clientId = process.env.PARCEL2GO_CLIENT_ID
@@ -57,7 +62,9 @@ async function main() {
 
   const client = new Parcel2GoClient({ clientId, clientSecret, environment })
   console.log(`Environment: ${environment}`)
-  console.log(`Quote: ${postcode} -> ${deliveryPostcode}, ${weightKg}kg\n`)
+  console.log(
+    `Quote: ${postcode} -> ${deliveryPostcode}, ${weightKg}kg, ${lengthCm}x${widthCm}x${heightCm}cm\n`,
+  )
 
   try {
     const balance = await client.getPrepayBalance()
@@ -90,11 +97,20 @@ async function main() {
       VatStatus: 'Individual',
     },
     Parcels: [
-      { Value: 50, Weight: weightKg, Length: 80, Width: 35, Height: 15 },
+      {
+        Value: 50,
+        Weight: weightKg,
+        Length: lengthCm,
+        Width: widthCm,
+        Height: heightCm,
+      },
     ],
   })
 
-  writeFileSync('quotes-output.json', JSON.stringify(quote, null, 2))
+  writeFileSync(
+    `quotes-output-${lengthCm}x${widthCm}x${heightCm}-${weightKg}kg.json`,
+    JSON.stringify(quote, null, 2),
+  )
 
   const options = extractQuoteOptions(quote)
   if (options.length) {
@@ -106,15 +122,34 @@ async function main() {
           slug: o.slug,
           name: o.name,
           courier: o.courier,
+          type: o.raw?.Service?.CollectionType,
           'price inc VAT': o.price,
         })),
     )
+    const wanted = options
+      .filter((o) =>
+        /fedex|royal\s*mail/i.test(`${o.courier} ${o.name} ${o.slug}`),
+      )
+      .sort((x, y) => x.price - y.price)
+    console.log('\nFedEx / Royal Mail only:')
+    if (wanted.length) {
+      console.table(
+        wanted.map((o) => ({
+          slug: o.slug,
+          name: o.name,
+          type: o.raw?.Service?.CollectionType,
+          price: o.price,
+        })),
+      )
+    } else {
+      console.log('  none offered for this size/weight')
+    }
   } else {
     console.log(
       'No services found. Open quotes-output.json and check the shape.',
     )
   }
-  console.log('\nFull raw response saved to quotes-output.json')
+  console.log('\nFull raw response saved to quotes-output-<size>-<weight>.json')
 }
 
 main().catch((err) => {

@@ -17,6 +17,14 @@ import {
   splitAddressLine,
   toIso3,
 } from './client'
+import {
+  fallbackSlug,
+  pickTier,
+  toQty,
+  TIERS,
+  COLLECTION_TIERS,
+  collectionFallbackSlug,
+} from './shipping-tier'
 
 type InjectedDependencies = {}
 
@@ -28,6 +36,9 @@ const CATEGORY_WEIGHT_FALLBACKS: Array<{ pattern: RegExp; grams: number }> = [
   { pattern: /squash/i, grams: 250 },
   { pattern: /string(ing)?/i, grams: 50 },
   { pattern: /bag|kit ?bag|backpack/i, grams: 700 },
+  { pattern: /grip|damp|headband|wristband/i, grams: 40 },
+  { pattern: /sock/i, grams: 80 },
+  { pattern: /ball|\btin\b|\bcan\b/i, grams: 260 },
   { pattern: /shuttlecock|shuttle/i, grams: 150 },
   { pattern: /clothing|shirt|short|jacket|top/i, grams: 200 },
 ]
@@ -52,9 +63,18 @@ function trackingUrl(trackingNumber: string) {
   return `https://www.parcel2go.com/tracking?trackingNumber=${encodeURIComponent(trackingNumber)}`
 }
 
-function buildParcel(weightKg: number, value = 50): Parcel2GoParcel {
-  // Default box size — replace with real dimensions when products carry them.
-  return { Value: value, Weight: weightKg, Length: 80, Width: 35, Height: 15 }
+function buildParcel(
+  weightKg: number,
+  value = 50,
+  dims: { Length: number; Width: number; Height: number } = {
+    Length: 80,
+    Width: 35,
+    Height: 15,
+  },
+): Parcel2GoParcel {
+  // Default box (80x35x15) is for rackets; createFulfillment() passes the
+  // smaller Large Letter / Small Parcel box when the items fit.
+  return { Value: value, Weight: weightKg, ...dims }
 }
 
 function toOrderAddress(a: {
@@ -125,12 +145,33 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       {
         id: 'parcel2go-standard',
         name: 'Parcel2Go Standard',
-        service_id: standard || '',
+        service_id: standard || 'auto',
       },
       {
         id: 'parcel2go-express',
         name: 'Parcel2Go Express',
-        service_id: express || '',
+        service_id: express || 'auto',
+      },
+      // A separate outbound option so the owner can offer the customer a
+      // choice at checkout: drop-off (parcel2go-standard, cheaper) or
+      // courier collection from the warehouse (this one, dearer but no
+      // trip to a shop needed). Same product-based tier picking, just with
+      // collection slugs instead of drop-off slugs.
+      {
+        id: 'parcel2go-standard-collection',
+        name: 'Parcel2Go Standard (Collection)',
+        service_id: standard || 'auto',
+      },
+      // Same provider, marked is_return so it shows up under "Return
+      // options" in Admin. createReturnFulfillment() reads
+      // PARCEL2GO_RETURN_SERVICE_ID / RETURN_ADDRESS_* the same way
+      // no matter what this is called — only Standard is offered for
+      // returns (no Express return option).
+      {
+        id: 'parcel2go-return-standard',
+        name: 'Parcel2Go Return (Standard)',
+        service_id: standard || 'auto',
+        is_return: true,
       },
     ]
   }
@@ -199,6 +240,9 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
    */
   private async bookShipment(args: {
     serviceSlug: string
+    /** tried if serviceSlug isn't offered for this route (e.g. FedEx) */
+    fallbackSlug?: string
+    parcelDims?: { Length: number; Width: number; Height: number }
     collection: Parameters<typeof toOrderAddress>[0]
     delivery: Parameters<typeof toOrderAddress>[0]
     weightKg: number
@@ -233,7 +277,7 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
           'email and phone on the collection address).',
       )
     }
-    const parcel = buildParcel(args.weightKg, args.value)
+    const parcel = buildParcel(args.weightKg, args.value, args.parcelDims)
 
     if (
       collectionAddr.Postcode.replace(/\s+/g, '').toUpperCase() ===
@@ -268,7 +312,11 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     // Never silently fall back to another courier: a wrong/unset slug used to
     // book whichever service happened to be first in the list (often a
     // £10+ Parcelforce one). Fail loudly instead.
-    const matched = options.find((o) => o.slug === args.serviceSlug)
+    const matched =
+      options.find((o) => o.slug === args.serviceSlug) ??
+      (args.fallbackSlug
+        ? options.find((o) => o.slug === args.fallbackSlug)
+        : undefined)
     if (!matched) {
       throw new Error(
         `[parcel2go] Service "${args.serviceSlug}" is not offered for ${deliveryAddr.Postcode} ` +
@@ -277,6 +325,10 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
           `Services offered right now: ${options.map((o) => o.slug).join(', ') || 'none'}.`,
       )
     }
+
+    console.log(
+      `[parcel2go] service: ${matched.name} (${matched.courier}) - £${matched.price.toFixed(2)} inc VAT [${matched.slug}]`,
+    )
 
     // 2. Collection date
     const dates = await this.client_.getCollectionDates({
@@ -302,7 +354,7 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     if (prepayBalance !== null && prepayBalance < matched.price) {
       throw new Error(
         `[parcel2go] Prepay balance (£${prepayBalance.toFixed(2)}) is lower than the cost of this ` +
-          `shipment (£${matched.price.toFixed(2)}). Top up Prepay in your Parcel2Go account and try again.`,
+          `shipment (£${matched.price.toFixed(2)}, ${matched.name}). Top up Prepay in your Parcel2Go account and try again.`,
       )
     }
 
@@ -373,22 +425,76 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     // onto every shipping method), so it goes stale — e.g. it kept booking
     // "Yodel 48" after .env was changed to another service. Use it only as a
     // fallback when .env has no slug.
-    const envSlug =
-      data.id === 'parcel2go-express'
-        ? process.env.PARCEL2GO_SERVICE_ID_EXPRESS
-        : process.env.PARCEL2GO_SERVICE_ID_STANDARD
-    const configuredSlug = envSlug || (data.service_id as string) || ''
+    const isExpress = data.id === 'parcel2go-express'
+    const isCollection = data.id === 'parcel2go-standard-collection'
+    const envSlug = isExpress
+      ? process.env.PARCEL2GO_SERVICE_ID_EXPRESS
+      : process.env.PARCEL2GO_SERVICE_ID_STANDARD
+
+    // The fulfillment item only carries a short title. Join it to the order
+    // line (via line_item_id) to also get the product title and Type.
+    const orderLines = new Map<string, any>(
+      (((order as any)?.items ?? []) as any[]).map((l) => [l.id, l]),
+    )
+    const enriched = items.map((i) => {
+      const line = i.line_item_id ? orderLines.get(i.line_item_id) : undefined
+      return {
+        ...i,
+        quantity: toQty(i.quantity),
+        title: [line?.product_title, (i as any).title]
+          .filter(Boolean)
+          .join(' '),
+        productType: (line?.product_type as string | undefined) ?? undefined,
+      }
+    })
+
+    const totalWeightGrams = enriched.reduce(
+      (sum, item) => sum + estimateWeightGrams(item) * item.quantity,
+      0,
+    )
+    const weightKg = (totalWeightGrams || DEFAULT_FALLBACK_WEIGHT_GRAMS) / 1000
+
+    // "auto" (or unset): choose the cheapest FedEx / Royal Mail drop-off that
+    // fits the items — Large Letter, Small Parcel, or FedEx. Any other value
+    // in .env is used as a fixed slug, exactly like before.
+    const useAuto = !envSlug || envSlug === 'auto'
+    const tierMatch = useAuto
+      ? pickTier(
+          enriched.map((i) => ({
+            title: i.title,
+            quantity: i.quantity,
+            productType: i.productType,
+          })),
+          weightKg,
+        )
+      : undefined
+    // Collection option -> collection slugs (courier picks up from the
+    // warehouse); everything else stays drop-off, unchanged.
+    const tier = tierMatch
+      ? isCollection
+        ? COLLECTION_TIERS[tierMatch.id]
+        : tierMatch
+      : undefined
+    const configuredSlug = tier
+      ? isExpress
+        ? tier.expressSlug
+        : tier.standardSlug
+      : envSlug || (data.service_id as string) || ''
     if (!configuredSlug) {
       throw new Error(
         '[parcel2go] Shipping option has no service_id configured.',
       )
     }
-
-    const totalWeightGrams = items.reduce(
-      (sum, item) => sum + estimateWeightGrams(item) * item.quantity,
-      0,
-    )
-    const weightKg = (totalWeightGrams || DEFAULT_FALLBACK_WEIGHT_GRAMS) / 1000
+    if (!tier) {
+      console.log(
+        `[parcel2go] AUTO IS OFF - using fixed slug from .env: ${configuredSlug}. Set PARCEL2GO_SERVICE_ID_${isExpress ? 'EXPRESS' : 'STANDARD'}=auto to pick by product.`,
+      )
+    }
+    if (tier) {
+      console.log(
+        `[parcel2go] tier=${tier.id} slug=${configuredSlug} weight=${weightKg.toFixed(2)}kg items=${enriched.map((i) => `${i.quantity}x ${i.title}${i.productType ? ` [${i.productType}]` : ''}`).join(' | ')}`,
+      )
+    }
 
     const orderAny = order as any
     const total = Number(orderAny?.total ?? 50) || 50
@@ -397,6 +503,12 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
 
     const result = await this.bookShipment({
       serviceSlug: configuredSlug,
+      fallbackSlug: tier
+        ? isCollection
+          ? collectionFallbackSlug(isExpress)
+          : fallbackSlug(isExpress)
+        : undefined,
+      parcelDims: tier?.parcel,
       collection: this.getSender(),
       delivery: {
         name: `${first} ${last}`.trim(),
@@ -474,16 +586,50 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
 
   async createReturnFulfillment(
     fulfillment: Record<string, unknown>,
+    items?: FulfillmentItemDTO[],
+    order?: Partial<FulfillmentOrderDTO>,
   ): Promise<CreateFulfillmentResult> {
     const existing = (fulfillment?.data as any)?.parcel2go_return_order_id
     if (existing) {
       return { data: fulfillment.data as Record<string, unknown>, labels: [] }
     }
 
-    const serviceSlug = process.env.PARCEL2GO_RETURN_SERVICE_ID
+    // Same product-based tier logic as outbound, but with COLLECTION slugs
+    // (courier picks up from the customer instead of a drop-off).
+    const orderLines = new Map<string, any>(
+      (((order as any)?.items ?? []) as any[]).map((l: any) => [l.id, l]),
+    )
+    const enriched = (items ?? []).map((i) => {
+      const line = i.line_item_id ? orderLines.get(i.line_item_id) : undefined
+      return {
+        title: [line?.product_title, (i as any).title]
+          .filter(Boolean)
+          .join(' '),
+        productType: (line?.product_type as string | undefined) ?? undefined,
+        quantity: toQty(i.quantity),
+      }
+    })
+    const totalWeightGrams = enriched.reduce(
+      (sum, item) => sum + estimateWeightGrams(item as any) * item.quantity,
+      0,
+    )
+    const weightKg = (totalWeightGrams || DEFAULT_FALLBACK_WEIGHT_GRAMS) / 1000
+    const envSlug = process.env.PARCEL2GO_RETURN_SERVICE_ID
+    const useAuto = !envSlug || envSlug === 'auto'
+    // Customer returns are drop-off only (they take it to a shop
+    // themselves) — same tiers/slugs as outbound, not the Collection ones.
+    const tier = useAuto ? pickTier(enriched, weightKg) : undefined
+    const returnTier = tier ? TIERS[tier.id] : undefined
+    const serviceSlug = returnTier?.standardSlug ?? envSlug ?? ''
     if (!serviceSlug) {
       throw new Error(
-        '[parcel2go] PARCEL2GO_RETURN_SERVICE_ID (a service slug) is not set.',
+        '[parcel2go] PARCEL2GO_RETURN_SERVICE_ID (a service slug) is not set. ' +
+          'Set it to a fixed slug, or to "auto" to pick by product like outbound orders.',
+      )
+    }
+    if (returnTier) {
+      console.log(
+        `[parcel2go] RETURN tier=${tier!.id} slug=${serviceSlug} weight=${weightKg.toFixed(2)}kg items=${enriched.map((i) => `${i.quantity}x ${i.title}`).join(' | ')}`,
       )
     }
     const line1 = process.env.RETURN_ADDRESS_LINE1
@@ -503,6 +649,8 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
 
     const result = await this.bookShipment({
       serviceSlug,
+      fallbackSlug: returnTier ? fallbackSlug(false) : undefined,
+      parcelDims: returnTier?.parcel,
       collection: customer,
       delivery: {
         name: `${process.env.RETURN_ADDRESS_FIRST_NAME || 'Returns'} ${process.env.RETURN_ADDRESS_LAST_NAME || 'Department'}`.trim(),
@@ -513,7 +661,7 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
         postcode,
         countryCode: process.env.RETURN_ADDRESS_COUNTRY_ISO || 'GB',
       },
-      weightKg: 0.5,
+      weightKg: returnTier ? weightKg : 0.5,
       value: 50,
       contents: 'Returned sports goods',
       customer: {
