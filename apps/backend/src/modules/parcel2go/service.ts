@@ -262,6 +262,11 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     const deliveryAddr = toOrderAddress({
       ...args.delivery,
       phone: args.delivery.phone || senderPhone,
+      // Parcel2Go rejects the whole booking if the delivery address has no
+      // email. The caller already tries order.email / customer.email /
+      // address.email first (see createFulfillment); this is only the last
+      // resort so a missing customer email doesn't hard-fail the shipment.
+      email: args.delivery.email || senderEmail,
     })
     // CustomerDetails = the account booking the label (the business), not the
     // end customer. The end customer's email only goes on the delivery address.
@@ -275,6 +280,14 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
         '[parcel2go] Missing contact details: set PARCEL2GO_SENDER_EMAIL and ' +
           'PARCEL2GO_SENDER_PHONE in the backend .env (Parcel2Go requires an ' +
           'email and phone on the collection address).',
+      )
+    }
+    if (!deliveryAddr.Email) {
+      throw new Error(
+        '[parcel2go] Missing delivery address email: the order has no email ' +
+          '(order.email / customer.email) and PARCEL2GO_SENDER_EMAIL is not ' +
+          'set as a fallback. Add an email to the order/customer, or set ' +
+          'PARCEL2GO_SENDER_EMAIL in the backend .env.',
       )
     }
     const parcel = buildParcel(args.weightKg, args.value, args.parcelDims)
@@ -501,6 +514,17 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     const first = address.first_name ?? ''
     const last = address.last_name ?? ''
 
+    // The order-level email is the usual source, but draft/admin-created
+    // orders can end up without one. Fall back to the linked customer's
+    // email, then to whatever the shipping address itself carries (e.g. a
+    // POS-collected email), before finally leaving it blank and letting
+    // bookShipment() apply PARCEL2GO_SENDER_EMAIL / raise a clear error.
+    const customerEmail: string | undefined =
+      orderAny?.email ||
+      orderAny?.customer?.email ||
+      (address as any)?.email ||
+      undefined
+
     const result = await this.bookShipment({
       serviceSlug: configuredSlug,
       fallbackSlug: tier
@@ -519,13 +543,13 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
         postcode: address.postal_code ?? '',
         countryCode: address.country_code,
         phone: address.phone,
-        email: orderAny?.email,
+        email: customerEmail,
       },
       weightKg,
       value: total,
       contents: 'Sports goods',
       customer: {
-        email: orderAny?.email || process.env.PARCEL2GO_SENDER_EMAIL || '',
+        email: customerEmail || process.env.PARCEL2GO_SENDER_EMAIL || '',
         forename: first || 'Customer',
         surname: last || '-',
       },
