@@ -1,3 +1,4 @@
+import { pickEstimatedDelivery, findP2gRef } from './estimate'
 import { AbstractFulfillmentProviderService } from '@medusajs/framework/utils'
 import type {
   CalculatedShippingOptionPrice,
@@ -56,10 +57,6 @@ function estimateWeightGrams(item: FulfillmentItemDTO): number {
 }
 
 function trackingUrl(trackingNumber: string) {
-  // NEEDS-VERIFICATION: parcel2go.com/tracking accepts a tracking number
-  // via its on-page search box (see https://parcel2go.com/tracking) — the
-  // exact query-string param for deep-linking straight to results isn't
-  // published, so confirm this against a real order before relying on it.
   return `https://www.parcel2go.com/tracking?trackingNumber=${encodeURIComponent(trackingNumber)}`
 }
 
@@ -72,8 +69,6 @@ function buildParcel(
     Height: 15,
   },
 ): Parcel2GoParcel {
-  // Default box (80x35x15) is for rackets; createFulfillment() passes the
-  // smaller Large Letter / Small Parcel box when the items fit.
   return { Value: value, Weight: weightKg, ...dims }
 }
 
@@ -105,21 +100,6 @@ function toOrderAddress(a: {
   }
 }
 
-/**
- * Fulfillment Provider Module for Parcel2Go.
- *
- * Registered in medusa-config.ts under modules -> Fulfillment Module ->
- * providers, id: "parcel2go". Only the two "Shipping" options (Standard,
- * Express) get linked to this provider in Admin — "Local Pickup" stays on
- * the built-in "Manual" provider, untouched.
- *
- * Each Shipping Option's `data` field must include:
- *   { service_id: "<a Parcel2Go serviceId, e.g. from a getQuotes() call>" }
- * Unlike Royal Mail's fixed TOLP48/TOLP24 codes, Parcel2Go service ids are
- * returned per-quote from the live courier network, so createFulfillment()
- * re-quotes at fulfillment time and matches the configured id against
- * whatever the network currently offers for that courier/service pairing.
- */
 class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderService {
   static identifier = 'parcel2go'
 
@@ -152,21 +132,11 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
         name: 'Parcel2Go Express',
         service_id: express || 'auto',
       },
-      // A separate outbound option so the owner can offer the customer a
-      // choice at checkout: drop-off (parcel2go-standard, cheaper) or
-      // courier collection from the warehouse (this one, dearer but no
-      // trip to a shop needed). Same product-based tier picking, just with
-      // collection slugs instead of drop-off slugs.
       {
         id: 'parcel2go-standard-collection',
         name: 'Parcel2Go Standard (Collection)',
         service_id: standard || 'auto',
       },
-      // Same provider, marked is_return so it shows up under "Return
-      // options" in Admin. createReturnFulfillment() reads
-      // PARCEL2GO_RETURN_SERVICE_ID / RETURN_ADDRESS_* the same way
-      // no matter what this is called — only Standard is offered for
-      // returns (no Express return option).
       {
         id: 'parcel2go-return-standard',
         name: 'Parcel2Go Return (Standard)',
@@ -187,14 +157,10 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
         '[parcel2go] Shipping address must include postcode and country code.',
       )
     }
-    // Carry the option's service_id (from getFulfillmentOptions) onto the
-    // shipping method so createFulfillment() can read it later.
     return { ...optionData, ...data }
   }
 
   async validateOption(_data: Record<string, unknown>): Promise<boolean> {
-    // service_id is resolved at fulfillment time (option data -> .env
-    // fallback), so an option created without it is still valid.
     return true
   }
 
@@ -234,13 +200,8 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     }
   }
 
-  /**
-   * Quote -> collection date -> create order -> pay with Prepay -> read
-   * tracking number. Shared by outbound shipments and returns.
-   */
   private async bookShipment(args: {
     serviceSlug: string
-    /** tried if serviceSlug isn't offered for this route (e.g. FedEx) */
     fallbackSlug?: string
     parcelDims?: { Length: number; Width: number; Height: number }
     collection: Parameters<typeof toOrderAddress>[0]
@@ -250,8 +211,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     contents: string
     customer: { email: string; forename: string; surname: string }
   }) {
-    // Parcel2Go requires an email + phone on the collection address and an
-    // email on the order. Fall back to the warehouse contact from .env.
     const senderEmail = process.env.PARCEL2GO_SENDER_EMAIL
     const senderPhone = process.env.PARCEL2GO_SENDER_PHONE
     const collectionAddr = toOrderAddress({
@@ -262,14 +221,8 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     const deliveryAddr = toOrderAddress({
       ...args.delivery,
       phone: args.delivery.phone || senderPhone,
-      // Parcel2Go rejects the whole booking if the delivery address has no
-      // email. The caller already tries order.email / customer.email /
-      // address.email first (see createFulfillment); this is only the last
-      // resort so a missing customer email doesn't hard-fail the shipment.
       email: args.delivery.email || senderEmail,
     })
-    // CustomerDetails = the account booking the label (the business), not the
-    // end customer. The end customer's email only goes on the delivery address.
     const bookerEmail = senderEmail || args.customer.email || ''
     const [bookerForename, ...bookerRest] = (
       process.env.PARCEL2GO_SENDER_NAME || 'Warehouse Team'
@@ -303,7 +256,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       )
     }
 
-    // 1. Quote — confirms the slug is still offered for this route.
     const quoteRes = await this.client_.getQuotes({
       CollectionAddress: {
         Country: collectionAddr.CountryIsoCode,
@@ -322,9 +274,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       Parcels: [parcel],
     })
     const options = extractQuoteOptions(quoteRes)
-    // Never silently fall back to another courier: a wrong/unset slug used to
-    // book whichever service happened to be first in the list (often a
-    // £10+ Parcelforce one). Fail loudly instead.
     const matched =
       options.find((o) => o.slug === args.serviceSlug) ??
       (args.fallbackSlug
@@ -343,7 +292,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       `[parcel2go] service: ${matched.name} (${matched.courier}) - £${matched.price.toFixed(2)} inc VAT [${matched.slug}]`,
     )
 
-    // 2. Collection date
     const dates = await this.client_.getCollectionDates({
       serviceSlug: matched.slug,
       address: `${collectionAddr.Property} ${collectionAddr.Street}`.trim(),
@@ -358,9 +306,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       )
     }
 
-    // 2b. Make sure Prepay can actually cover this shipment BEFORE creating the
-    // order. Parcel2Go answers an under-funded paywithprepay with a bare
-    // 500 "An error has occurred.", and leaves an unpaid order behind.
     const prepayBalance = await this.client_
       .getPrepayBalance()
       .catch(() => null)
@@ -371,7 +316,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       )
     }
 
-    // 3. Create order
     const created = await this.client_.createOrder({
       Items: [
         {
@@ -389,7 +333,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
               Width: parcel.Width,
               Weight: parcel.Weight,
               EstimatedValue: parcel.Value,
-              // the delivery address goes INSIDE the parcel in POST /orders
               DeliveryAddress: deliveryAddr,
               ContentsSummary: args.contents,
             },
@@ -405,10 +348,9 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     })
     const orderId = String(created.OrderId)
 
-    // 4. Pay from Prepay balance (no browser redirect needed)
-    await this.client_.payOrderWithPrepay(orderId)
+    const paid = await this.client_.payOrderWithPrepay(orderId)
+    const p2gRef = findP2gRef(created) ?? findP2gRef(paid)
 
-    // 5. Tracking number (may be empty until the courier assigns it)
     const parcels = await this.client_
       .getParcelNumbers(orderId)
       .catch(() => ({ TrackingNumbers: [] }))
@@ -416,7 +358,18 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       parcels.TrackingNumbers?.find((t) => !!t.TrackingNumber)
         ?.TrackingNumber ?? undefined
 
-    return { orderId, slug: matched.slug, trackingNumber }
+    console.log(
+      `[parcel2go] booked orderId=${orderId} p2gRef=${p2gRef ?? 'not-in-response'} tracking=${trackingNumber ?? 'none'}`,
+    )
+
+    return {
+      orderId,
+      slug: matched.slug,
+      trackingNumber,
+      p2gRef,
+      collectionDate,
+      estimatedDelivery: pickEstimatedDelivery(matched.raw, collectionDate),
+    }
   }
 
   async createFulfillment(
@@ -433,19 +386,12 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     if (!address) {
       throw new Error('[parcel2go] Missing shipping address on order.')
     }
-    // .env is the source of truth. The option's stored `service_id` is only a
-    // snapshot taken when the option was created in Medusa Admin (and copied
-    // onto every shipping method), so it goes stale — e.g. it kept booking
-    // "Yodel 48" after .env was changed to another service. Use it only as a
-    // fallback when .env has no slug.
     const isExpress = data.id === 'parcel2go-express'
     const isCollection = data.id === 'parcel2go-standard-collection'
     const envSlug = isExpress
       ? process.env.PARCEL2GO_SERVICE_ID_EXPRESS
       : process.env.PARCEL2GO_SERVICE_ID_STANDARD
 
-    // The fulfillment item only carries a short title. Join it to the order
-    // line (via line_item_id) to also get the product title and Type.
     const orderLines = new Map<string, any>(
       (((order as any)?.items ?? []) as any[]).map((l) => [l.id, l]),
     )
@@ -467,9 +413,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     )
     const weightKg = (totalWeightGrams || DEFAULT_FALLBACK_WEIGHT_GRAMS) / 1000
 
-    // "auto" (or unset): choose the cheapest FedEx / Royal Mail drop-off that
-    // fits the items — Large Letter, Small Parcel, or FedEx. Any other value
-    // in .env is used as a fixed slug, exactly like before.
     const useAuto = !envSlug || envSlug === 'auto'
     const tierMatch = useAuto
       ? pickTier(
@@ -481,8 +424,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
           weightKg,
         )
       : undefined
-    // Collection option -> collection slugs (courier picks up from the
-    // warehouse); everything else stays drop-off, unchanged.
     const tier = tierMatch
       ? isCollection
         ? COLLECTION_TIERS[tierMatch.id]
@@ -514,11 +455,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     const first = address.first_name ?? ''
     const last = address.last_name ?? ''
 
-    // The order-level email is the usual source, but draft/admin-created
-    // orders can end up without one. Fall back to the linked customer's
-    // email, then to whatever the shipping address itself carries (e.g. a
-    // POS-collected email), before finally leaving it blank and letting
-    // bookShipment() apply PARCEL2GO_SENDER_EMAIL / raise a clear error.
     const customerEmail: string | undefined =
       orderAny?.email ||
       orderAny?.customer?.email ||
@@ -558,11 +494,20 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     return {
       data: {
         parcel2go_order_id: result.orderId,
+        ...(result.p2gRef ? { parcel2go_ref: result.p2gRef } : {}),
         ...(result.trackingNumber
           ? { tracking_number: result.trackingNumber }
           : {}),
         service_id: result.slug,
-        // cached so createReturnFulfillment() can use it later
+        ...(result.collectionDate
+          ? { collection_date: result.collectionDate }
+          : {}),
+        ...(result.estimatedDelivery
+          ? {
+              estimated_delivery: result.estimatedDelivery.date,
+              estimated_delivery_source: result.estimatedDelivery.source,
+            }
+          : {}),
         customer_address: {
           name: `${first} ${last}`.trim(),
           line1: address.address_1 ?? '',
@@ -588,9 +533,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
   async cancelFulfillment(
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    // The Parcel2Go public API (Swagger v1) has no cancel endpoint, so the
-    // booking must be cancelled from the Parcel2Go dashboard. We only mark
-    // it locally so Medusa can proceed.
     const id = data?.parcel2go_order_id as string | undefined
     if (id) {
       console.warn(
@@ -603,8 +545,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
   async getFulfillmentDocuments(
     data: Record<string, unknown>,
   ): Promise<never[]> {
-    // Parcel2Go returns labels as base64, not a hosted URL. The dashboard
-    // uses GET /admin/orders/:id/shipping-label instead, so nothing here.
     return [] as never[]
   }
 
@@ -618,8 +558,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
       return { data: fulfillment.data as Record<string, unknown>, labels: [] }
     }
 
-    // Same product-based tier logic as outbound, but with COLLECTION slugs
-    // (courier picks up from the customer instead of a drop-off).
     const orderLines = new Map<string, any>(
       (((order as any)?.items ?? []) as any[]).map((l: any) => [l.id, l]),
     )
@@ -640,8 +578,6 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     const weightKg = (totalWeightGrams || DEFAULT_FALLBACK_WEIGHT_GRAMS) / 1000
     const envSlug = process.env.PARCEL2GO_RETURN_SERVICE_ID
     const useAuto = !envSlug || envSlug === 'auto'
-    // Customer returns are drop-off only (they take it to a shop
-    // themselves) — same tiers/slugs as outbound, not the Collection ones.
     const tier = useAuto ? pickTier(enriched, weightKg) : undefined
     const returnTier = tier ? TIERS[tier.id] : undefined
     const serviceSlug = returnTier?.standardSlug ?? envSlug ?? ''
