@@ -3,7 +3,9 @@
 .DS_Store
 /uploads
 /node_modules
+/scripts
 yarn-error.log
+All orders.csv
 
 .idea
 
