@@ -3,12 +3,24 @@ export type EstimatedDelivery = {
   source: 'courier' | 'fallback'
 }
 
+export function toCalendarDate(value: string | Date): Date | null {
+  if (typeof value === 'string') {
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12, 0, 0))
+  }
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return null
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0),
+  )
+}
+
 export function addBusinessDays(from: Date, days: number) {
   const d = new Date(from)
   let left = Math.max(0, Math.round(days))
   while (left > 0) {
-    d.setDate(d.getDate() + 1)
-    const day = d.getDay()
+    d.setUTCDate(d.getUTCDate() + 1)
+    const day = d.getUTCDay()
     if (day !== 0 && day !== 6) left--
   }
   return d
@@ -33,14 +45,15 @@ export function pickEstimatedDelivery(
         /estimated.*deliver|deliver.*(date|by)/i.test(k) &&
         typeof v === 'string'
       ) {
-        const d = new Date(v)
-        if (!isNaN(d.getTime()))
-          return { date: d.toISOString(), source: 'courier' }
+        const d = toCalendarDate(v)
+        if (d) return { date: d.toISOString(), source: 'courier' }
       }
     }
   }
-  const start = collectionDate ? new Date(collectionDate) : new Date()
-  const base = isNaN(start.getTime()) ? new Date() : start
+  const base =
+    (collectionDate ? toCalendarDate(collectionDate) : null) ??
+    toCalendarDate(new Date()) ??
+    new Date()
   for (const src of sources) {
     if (!src || typeof src !== 'object') continue
     for (const [k, v] of Object.entries(src)) {
@@ -67,10 +80,44 @@ export function pickEstimatedDelivery(
   }
 }
 
+function digitsFrom(v: unknown, depth = 0): string | undefined {
+  if (v == null || depth > 6) return undefined
+  if (typeof v === 'number')
+    return Number.isInteger(v) && v > 99999 ? String(v) : undefined
+  if (typeof v === 'string') {
+    const m = v.match(/(?:P2G)?(\d{6,})/i)
+    return m ? m[1] : undefined
+  }
+  if (typeof v !== 'object') return undefined
+  const entries = Object.entries(v as Record<string, unknown>)
+  for (const [k, x] of entries) {
+    const fromKey = k.match(/(?:P2G)?(\d{6,})/i)
+    if (fromKey && Array.isArray(v) === false && typeof x !== 'object')
+      return fromKey[1]
+    const r = digitsFrom(x, depth + 1)
+    if (r) return r
+  }
+  return undefined
+}
+
 export function findP2gRef(obj: unknown, depth = 0): string | undefined {
-  if (obj == null || depth > 6) return undefined
-  if (typeof obj === 'string') return /^P2G\d{6,}$/i.test(obj) ? obj : undefined
-  if (typeof obj !== 'object') return undefined
+  if (obj == null || typeof obj !== 'object' || depth > 6) return undefined
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (/order.?line/i.test(k)) {
+      const r = digitsFrom(v)
+      if (r) return r
+    }
+  }
+  for (const v of Object.values(obj as Record<string, unknown>)) {
+    if (typeof v === 'string') {
+      const m = v.match(/P2G(\d{6,})/i)
+      if (m) return m[1]
+      if (/tracking/i.test(v)) {
+        const t = v.match(/(\d{7,})/)
+        if (t) return t[1]
+      }
+    }
+  }
   for (const v of Object.values(obj as Record<string, unknown>)) {
     const r = findP2gRef(v, depth + 1)
     if (r) return r

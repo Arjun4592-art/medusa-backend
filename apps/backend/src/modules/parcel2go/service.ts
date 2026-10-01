@@ -361,6 +361,18 @@ class Parcel2GoFulfillmentProviderService extends AbstractFulfillmentProviderSer
     console.log(
       `[parcel2go] booked orderId=${orderId} p2gRef=${p2gRef ?? 'not-in-response'} tracking=${trackingNumber ?? 'none'}`,
     )
+    if (!p2gRef) {
+      console.warn(
+        '[parcel2go] P2G reference not found. order response keys:',
+        Object.keys(created ?? {}),
+        'links:',
+        Object.keys((created as any)?.Links ?? {}),
+        'pay response keys:',
+        Object.keys((paid as any) ?? {}),
+        'pay links:',
+        JSON.stringify((paid as any)?.Links ?? null).slice(0, 400),
+      )
+    }
 
     return {
       orderId,

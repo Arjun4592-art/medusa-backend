@@ -218,7 +218,12 @@ export async function syncFulfillmentTracking(
       input: { orderId, fulfillmentId: fulfillment.id },
     })
     markedDelivered = true
-    await notifyStorefrontDelivered(orderId)
+    const ageHours =
+      (Date.now() - new Date(patch.courier_delivered_at).getTime()) / 3600000
+    const maxAge = Number(process.env.COURIER_EMAIL_MAX_AGE_HOURS ?? 48)
+    if (Number.isFinite(ageHours) && ageHours <= maxAge) {
+      await notifyStorefrontDelivered(orderId)
+    }
   }
 
   return {
