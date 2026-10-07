@@ -14,23 +14,6 @@ import {
   toQty,
 } from '../../../../../modules/parcel2go/shipping-tier'
 
-/**
- * POST /admin/orders/:id/return-label
- * Body: { items: [{ item_id: string; quantity: number }] }
- *
- * Books a REAL Parcel2Go collection (courier picks up from the customer) for
- * a shipped order's return, and returns the tracking number + cost. This is
- * for shipped orders only — store-pickup/local returns don't need a courier
- * and should never call this.
- *
- * This does NOT go through Medusa's fulfillment/returns module (no Return or
- * Fulfillment record is created) — it is a standalone booking used by the
- * POS/Dashboard return flow, which tracks everything itself in the order's
- * `metadata.returns` array. Kept deliberately separate from
- * Parcel2GoFulfillmentProviderService.createReturnFulfillment (used only
- * when a Medusa Return with a "Parcel2Go Return" shipping option is created)
- * so the two flows don't fight over the same order.
- */
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const orderId = req.params.id
   const body = (req.body ?? {}) as {
@@ -285,6 +268,23 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       parcels.TrackingNumbers?.find((t) => !!t.TrackingNumber)
         ?.TrackingNumber ?? undefined
 
+    // Fetch the printable label so the storefront can email it to the
+    // customer. Parcel2Go can need a moment after payment before the PDF
+    // exists, so retry a couple of times. A4 because the customer prints it.
+    let labelBase64: string | undefined
+    for (let attempt = 0; attempt < 3 && !labelBase64; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 1500))
+      const labels = await client
+        .getLabels(p2gOrderId, {
+          referenceType: 'OrderId',
+          detailLevel: 'Labels',
+          labelMedia: 'A4',
+          labelFormat: 'PDF',
+        })
+        .catch(() => null)
+      labelBase64 = labels?.Base64EncodedLabels?.find((l) => !!l)
+    }
+
     console.log(
       `[parcel2go] RETURN LABEL order=${orderId} tier=${tier.id} slug=${matched.slug} price=£${matched.price.toFixed(2)} tracking=${trackingNumber ?? 'pending'}`,
     )
@@ -293,7 +293,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       parcel2go_order_id: p2gOrderId,
       tracking_number: trackingNumber,
       service_name: matched.name,
+      carrier_name: matched.name,
       price: matched.price,
+      label_base64: labelBase64 ?? null,
+      label_mime: 'application/pdf',
     })
   } catch (err: any) {
     console.error('[parcel2go] return-label booking failed:', err)
