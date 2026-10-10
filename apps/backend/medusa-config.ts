@@ -96,6 +96,9 @@ module.exports = defineConfig({
     {
       resolve: './src/modules/blog',
     },
+    {
+      resolve: './src/modules/favorites',
+    },
 
     {
       resolve: '@medusajs/medusa/file',
