@@ -61,7 +61,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         filters: { id: link.store_credit_account_id },
         fields: ['id', 'balance'],
       })
-      balance = Number(account?.balance ?? 0)
+      // `balance` is computed at runtime by the store-credit module, but the
+      // generated entity type (StoreCreditAccount) doesn't declare it, so we
+      // read it through a narrow type instead of failing `medusa build`.
+      balance = Number(
+        (account as { balance?: number | string } | undefined)?.balance ?? 0
+      )
     }
 
     return res.json({
