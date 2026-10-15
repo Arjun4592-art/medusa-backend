@@ -24,9 +24,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       filters: { id: orderId },
       fields: [
         'id',
+        'metadata',
         'fulfillments.id',
         'fulfillments.data',
         'fulfillments.canceled_at',
+        'fulfillments.created_at',
       ],
     })
     .catch(() => ({ data: [] }))
@@ -38,11 +40,50 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   }
 
   const fulfillments = (order.fulfillments ?? []) as any[]
-  const fulfillment = fulfillments.find(
-    (f) => f?.data?.parcel2go_order_id && !f.canceled_at,
-  )
+
+  // Mail-in orders have up to three labels:
+  //   ?leg=box      store -> customer, the box kit
+  //   ?leg=inbound  customer -> store, booked when the order/box is sent
+  //   ?leg=return   store -> customer, the restrung rackets (default)
+  const leg = typeof req.query.leg === 'string' ? req.query.leg : ''
+  const boxFulfillmentId = order.metadata?.mail_in_box?.fulfillment_id as
+    string | undefined
+  const inbound = order.metadata?.mail_in_label as
+    { parcel2go_order_id?: string; tracking_number?: string } | undefined
+
+  // Newest first: the label wanted by default is the latest shipment.
+  const fulfillment: any =
+    leg === 'inbound'
+      ? inbound?.parcel2go_order_id
+        ? {
+            id: 'mail-in-inbound',
+            data: {
+              parcel2go_order_id: inbound.parcel2go_order_id,
+              tracking_number: inbound.tracking_number,
+            },
+          }
+        : undefined
+      : [...fulfillments]
+          .filter((f) =>
+            leg === 'box'
+              ? f.id === boxFulfillmentId
+              : leg === 'return' && boxFulfillmentId
+                ? f.id !== boxFulfillmentId
+                : true,
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.created_at ?? 0).getTime() -
+              new Date(a.created_at ?? 0).getTime(),
+          )
+          .find((f) => f?.data?.parcel2go_order_id && !f.canceled_at)
 
   if (!fulfillment) {
+    if (leg === 'inbound') {
+      return res.status(404).json({
+        error: 'No customer-to-store label has been booked for this order yet.',
+      })
+    }
     console.error(
       '[shipping-label] no fulfillment with parcel2go_order_id found. ' +
         'Raw fulfillments from Medusa:',

@@ -14,14 +14,91 @@ import {
   toQty,
 } from '../../../../../modules/parcel2go/shipping-tier'
 
+/**
+ * Parcel2Go can need a moment after payment before the label PDF exists, so
+ * poll for it. Returns undefined if it still is not ready.
+ */
+async function fetchLabelPdf(
+  client: Parcel2GoClient,
+  p2gOrderId: string,
+  attempts: number,
+  delayMs = 2000,
+): Promise<string | undefined> {
+  let labelBase64: string | undefined
+  for (let attempt = 0; attempt < attempts && !labelBase64; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, delayMs))
+    const labels = await client
+      .getLabels(p2gOrderId, {
+        referenceType: 'OrderId',
+        detailLevel: 'Labels',
+        labelMedia: 'A4',
+        labelFormat: 'PDF',
+      })
+      .catch(() => null)
+    labelBase64 = labels?.Base64EncodedLabels?.find((l) => !!l)
+  }
+  return labelBase64
+}
+
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const orderId = req.params.id
   const body = (req.body ?? {}) as {
     items?: { item_id: string; quantity: number }[]
+    /** Overrides the estimated weight (e.g. mail-in racket boxes). */
+    weight_kg?: number
+    /** Overrides the parcel contents description on the label. */
+    contents_summary?: string
+    /** Retry: reuse this already-paid Parcel2Go order instead of booking again. */
+    parcel2go_order_id?: string
   }
   const requestedItems = body.items ?? []
   if (!requestedItems.length) {
     return res.status(400).json({ error: 'items is required' })
+  }
+
+  // Retry of a label that was already booked and PAID for (the PDF just was
+  // not ready, or the email failed). Never book/pay a second label: only
+  // fetch the PDF of the existing Parcel2Go order.
+  if (body.parcel2go_order_id) {
+    const rClientId = process.env.PARCEL2GO_CLIENT_ID
+    const rClientSecret = process.env.PARCEL2GO_CLIENT_SECRET
+    if (!rClientId || !rClientSecret) {
+      return res
+        .status(500)
+        .json({ error: '[parcel2go] Missing PARCEL2GO_CLIENT_ID/SECRET.' })
+    }
+    const reuseClient = new Parcel2GoClient({
+      clientId: rClientId,
+      clientSecret: rClientSecret,
+      environment:
+        (process.env.PARCEL2GO_ENVIRONMENT as 'live' | 'sandbox') || 'live',
+      senderName: process.env.PARCEL2GO_SENDER_COMPANY_NAME,
+    })
+    try {
+      const existingId = String(body.parcel2go_order_id)
+      const parcels = await reuseClient
+        .getParcelNumbers(existingId)
+        .catch(() => ({ TrackingNumbers: [] }))
+      const trackingNumber =
+        parcels.TrackingNumbers?.find((t) => !!t.TrackingNumber)
+          ?.TrackingNumber ?? undefined
+      const labelBase64 = await fetchLabelPdf(reuseClient, existingId, 10)
+      console.log(
+        `[parcel2go] RETURN LABEL REUSED order=${orderId} p2g=${existingId} pdf=${labelBase64 ? 'ready' : 'not-ready'}`,
+      )
+      return res.status(200).json({
+        parcel2go_order_id: existingId,
+        tracking_number: trackingNumber,
+        label_base64: labelBase64 ?? null,
+        label_mime: 'application/pdf',
+        reused: true,
+      })
+    } catch (err: any) {
+      console.error('[parcel2go] return-label reuse failed:', err)
+      return res
+        .status(500)
+        .json({ error: err?.message ?? 'Could not fetch the existing label.' })
+    }
   }
 
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
@@ -81,13 +158,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     { pattern: /shuttlecock|shuttle/i, grams: 150 },
     { pattern: /shirt|short|jacket|top/i, grams: 200 },
   ]
-  const weightKg =
+  const estimatedWeightKg =
     enriched.reduce((sum, i) => {
       const match = CATEGORY_WEIGHT_FALLBACKS.find((c) =>
         c.pattern.test(i.title),
       )
       return sum + (match?.grams ?? 300) * i.quantity
     }, 0) / 1000 || 0.3
+  const weightKg =
+    typeof body.weight_kg === 'number' &&
+    Number.isFinite(body.weight_kg) &&
+    body.weight_kg > 0
+      ? body.weight_kg
+      : estimatedWeightKg
 
   // Customer returns are drop-off only (they take the parcel to a shop
   // themselves) — same tiers/slugs used for outbound, not Collection ones.
@@ -168,13 +251,21 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     email: order.email || senderEmail,
   })
   const deliveryAddr = toAddr({
-    name: `${process.env.RETURN_ADDRESS_FIRST_NAME || 'Returns'} ${process.env.RETURN_ADDRESS_LAST_NAME || 'Department'}`.trim(),
+    // RETURN_ADDRESS_NAME (full name, e.g. the shop name) wins; otherwise
+    // FIRST_NAME + LAST_NAME; otherwise "Returns Department".
+    name:
+      process.env.RETURN_ADDRESS_NAME?.trim() ||
+      `${process.env.RETURN_ADDRESS_FIRST_NAME || 'Returns'} ${process.env.RETURN_ADDRESS_LAST_NAME || 'Department'}`.trim(),
     company: process.env.RETURN_ADDRESS_COMPANY,
     line1,
     line2: process.env.RETURN_ADDRESS_LINE2,
     town,
     postcode,
     countryCode: process.env.RETURN_ADDRESS_COUNTRY_ISO || 'GB',
+    // Parcel2Go rejects the booking without a phone/email on the delivery
+    // (warehouse) address.
+    phone: process.env.RETURN_ADDRESS_PHONE || senderPhone,
+    email: senderEmail,
   })
 
   try {
@@ -196,12 +287,32 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       Parcels: [{ Value: 50, Weight: weightKg, ...returnTier.parcel }],
     })
     const options = extractQuoteOptions(quoteRes)
+    // Optional fixed override, e.g. PARCEL2GO_RETURN_SERVICE_ID=royalmail-int_2606
+    const envSlug = process.env.PARCEL2GO_RETURN_SERVICE_ID
+    // Only ever fall back to the couriers this shop actually uses.
+    const ownCouriers = options.filter((o) =>
+      /fedex|royal ?mail/i.test(`${o.slug} ${o.courier} ${o.name}`),
+    )
+    const cheapest = (list: typeof options) =>
+      [...list].sort((a, b) => a.price - b.price)[0]
+    const isDropOff = (o: { slug: string; name: string }) =>
+      /drop-?off/i.test(`${o.slug} ${o.name}`)
     const matched =
+      (envSlug && envSlug !== 'auto'
+        ? options.find((o) => o.slug === envSlug)
+        : undefined) ??
       options.find((o) => o.slug === returnTier.standardSlug) ??
-      options.find((o) => o.slug === fallbackSlug(false))
+      options.find((o) => o.slug === fallbackSlug(false)) ??
+      cheapest(ownCouriers.filter(isDropOff)) ??
+      cheapest(ownCouriers)
+    if (matched && matched.slug !== returnTier.standardSlug) {
+      console.warn(
+        `[parcel2go] return label: "${returnTier.standardSlug}" not offered for ${collectionAddr.Postcode}, using "${matched.slug}" (£${matched.price.toFixed(2)})`,
+      )
+    }
     if (!matched) {
       return res.status(422).json({
-        error: `[parcel2go] No return collection service offered for ${collectionAddr.Postcode}. Offered: ${options.map((o) => o.slug).join(', ') || 'none'}.`,
+        error: `[parcel2go] No FedEx / Royal Mail return service offered for ${collectionAddr.Postcode} (check the postcode is a real, serviceable address). Offered: ${options.map((o) => o.slug).join(', ') || 'none'}.`,
       })
     }
 
@@ -247,7 +358,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
               Weight: weightKg,
               EstimatedValue: 50,
               DeliveryAddress: deliveryAddr,
-              ContentsSummary: 'Returned sports goods',
+              ContentsSummary: body.contents_summary || 'Returned sports goods',
             },
           ],
           CollectionAddress: collectionAddr,
@@ -269,21 +380,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
         ?.TrackingNumber ?? undefined
 
     // Fetch the printable label so the storefront can email it to the
-    // customer. Parcel2Go can need a moment after payment before the PDF
-    // exists, so retry a couple of times. A4 because the customer prints it.
-    let labelBase64: string | undefined
-    for (let attempt = 0; attempt < 3 && !labelBase64; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, 1500))
-      const labels = await client
-        .getLabels(p2gOrderId, {
-          referenceType: 'OrderId',
-          detailLevel: 'Labels',
-          labelMedia: 'A4',
-          labelFormat: 'PDF',
-        })
-        .catch(() => null)
-      labelBase64 = labels?.Base64EncodedLabels?.find((l) => !!l)
-    }
+    // customer (A4 because the customer prints it). If the PDF is still not
+    // ready the storefront retries with parcel2go_order_id, which reuses this
+    // booking instead of paying for another label.
+    const labelBase64 = await fetchLabelPdf(client, p2gOrderId, 5)
 
     console.log(
       `[parcel2go] RETURN LABEL order=${orderId} tier=${tier.id} slug=${matched.slug} price=£${matched.price.toFixed(2)} tracking=${trackingNumber ?? 'pending'}`,
